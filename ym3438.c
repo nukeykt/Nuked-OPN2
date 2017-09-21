@@ -1189,7 +1189,7 @@ void OPN2_Reset(ym3438_t *chip)
     }
 }
 
-void OPN2_Clock(ym3438_t *chip, Bit32u *buffer)
+void OPN2_Clock(ym3438_t *chip, Bit32s *buffer)
 {
     // Clear status
     chip->lfo_inc = chip->mode_test_21[1];

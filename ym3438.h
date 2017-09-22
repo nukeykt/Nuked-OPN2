@@ -23,7 +23,7 @@
 //      OPLx decapsulated(Matthew Gambrell, Olli Niemitalo):
 //          OPL2 ROMs.
 //
-// version: 1.0
+// version: 1.0.1
 //
 
 #ifndef YM3438_H

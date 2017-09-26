@@ -1,4 +1,3 @@
-
 //
 // Copyright (C) 2017 Alexey Khokholov (Nuke.YKT)
 // 
@@ -24,13 +23,13 @@
 //      OPLx decapsulated(Matthew Gambrell, Olli Niemitalo):
 //          OPL2 ROMs.
 //
-// version: 1.0.2
+// version: 1.0.3
 //
 
 #ifndef YM3438_H
 #define YM3438_H
 
-#include <inttypes.h>
+#include <stdint.h>
 
 typedef uintptr_t       Bitu;
 typedef intptr_t        Bits;

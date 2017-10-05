@@ -23,7 +23,7 @@
 //      OPLx decapsulated(Matthew Gambrell, Olli Niemitalo):
 //          OPL2 ROMs.
 //
-// version: 1.0.4
+// version: 1.0.7
 //
 
 #include <string.h>
@@ -215,6 +215,8 @@ static const Bit32u fm_algorithm[4][6][8] = {
         { 1, 1, 1, 1, 1, 1, 1, 1 }  /* Out           */
     }
 };
+
+static Bit32u chip_type = ym3438_type_discrete;
 
 void OPN2_DoIO(ym3438_t *chip)
 {
@@ -490,7 +492,7 @@ void OPN2_PhaseCalcIncrement(ym3438_t *chip)
     basefreq = (fnum << chip->pg_block) >> 2;
 
     /* Apply detune */
-    if (dt & 0x03)
+    if (dt_l)
     {
         if (kcode > 0x1c)
         {
@@ -498,7 +500,7 @@ void OPN2_PhaseCalcIncrement(ym3438_t *chip)
         }
         block = kcode >> 2;
         note = kcode & 0x03;
-        sum = block + 1 + ((dt_l == 3) | (dt_l & 0x02) | ((dt_l != 0) << 3));
+        sum = block + 9 + ((dt_l == 3) | (dt_l & 0x02));
         sum_h = sum >> 1;
         sum_l = sum & 0x01;
         detune = pg_detune[(sum_l << 2) | note] >> (9 - sum_h);
@@ -655,7 +657,7 @@ void OPN2_EnvelopeADSR(ym3438_t *chip)
             }
             break;
         case eg_num_decay:
-            if (!eg_off && (level >> 5) == chip->eg_sl[1])
+            if ((level >> 5) == chip->eg_sl[1])
             {
                 nextstate = eg_num_sustain;
             }
@@ -723,28 +725,24 @@ void OPN2_EnvelopePrepare(ym3438_t *chip)
         rate = 0x3f;
     }
 
-    sum = (rate >> 2) + chip->eg_shift_lock;
+    sum = ((rate >> 2) + chip->eg_shift_lock) & 0x0f;
     if (chip->eg_rate != 0 && chip->eg_quotient == 2)
     {
         if (rate < 48)
         {
-            if ((sum & 0x0c) == 0x0c)
+            switch (sum)
             {
-                if ((sum & 0x03) == 0)
-                {
-                    inc = 1;
-                }
-                else
-                {
-                    if (sum & 0x01)
-                    {
-                        inc |= (rate >> 1) & 0x01;
-                    }
-                    if (sum & 0x02)
-                    {
-                        inc |= rate & 0x01;
-                    }
-                }
+            case 12:
+                inc = 1;
+                break;
+            case 13:
+                inc = (rate >> 1) & 0x01;
+                break;
+            case 14:
+                inc = rate & 0x01;
+                break;
+            default:
+                break;
             }
         }
         else
@@ -787,11 +785,11 @@ void OPN2_EnvelopePrepare(ym3438_t *chip)
     chip->eg_ksv = chip->pg_kcode >> (chip->ks[slot] ^ 0x03);
     if (chip->am[slot])
     {
-        chip->eg_am_shift = chip->ams[chip->channel];
+        chip->eg_lfo_am = chip->lfo_am >> eg_am_shift[chip->ams[chip->channel]];
     }
     else
     {
-        chip->eg_am_shift = 0;
+        chip->eg_lfo_am = 0;
     }
     /* Delay TL & SL value */
     chip->eg_tl[1] = chip->eg_tl[0];
@@ -819,7 +817,7 @@ void OPN2_EnvelopeGenerate(ym3438_t *chip)
     level &= 0x3ff;
 
     /* Apply AM LFO */
-    level += chip->lfo_am >> eg_am_shift[chip->eg_am_shift];
+    level += chip->eg_lfo_am;
 
     /* Apply TL */
     if (!(chip->mode_csm && chip->channel == 2 + 1))
@@ -950,6 +948,8 @@ void OPN2_ChOutput(ym3438_t *chip)
     Bit32u channel = chip->channel;
     Bit32u test_dac = chip->mode_test_2c[5];
     Bit16s out;
+    Bit16s sign;
+    Bit32u out_en;
     chip->ch_read = chip->ch_lock;
     if (chip->slot < 12)
     {
@@ -979,13 +979,53 @@ void OPN2_ChOutput(ym3438_t *chip)
     }
     chip->mol = 0;
     chip->mor = 0;
-    if (chip->ch_lock_l)
+
+    if (chip_type == ym3438_type_ym2612)
     {
-        chip->mol = out;
+        out_en = ((chip->cycles & 3) == 3) || test_dac;
+        /* YM2612 DAC emulation(not verified) */
+        sign = out >> 8;
+        if (out >= 0)
+        {
+            out++;
+            sign++;
+        }
+        if (chip->ch_lock_l && out_en)
+        {
+            chip->mol = out;
+        }
+        else
+        {
+            chip->mol = sign;
+        }
+        if (chip->ch_lock_r && out_en)
+        {
+            chip->mor = out;
+        }
+        else
+        {
+            chip->mor = sign;
+        }
+        /* Amplify signal */
+        chip->mol *= 3;
+        chip->mor *= 3;
     }
-    if (chip->ch_lock_r)
+    else
     {
-        chip->mor = out;
+        out_en = ((chip->cycles & 3) != 0) || test_dac;
+        /* Discrete YM3438 seems has the ladder effect too */
+        if (out >= 0 && chip_type == ym3438_type_discrete)
+        {
+            out++;
+        }
+        if (chip->ch_lock_l && out_en)
+        {
+            chip->mol = out;
+        }
+        if (chip->ch_lock_r && out_en)
+        {
+            chip->mor = out;
+        }
     }
 }
 
@@ -1163,6 +1203,11 @@ void OPN2_Reset(ym3438_t *chip)
     }
 }
 
+void OPN2_SetChipType(Bit32u type)
+{
+    chip_type = type;
+}
+
 void OPN2_Clock(ym3438_t *chip, Bit32u *buffer)
 {
     chip->lfo_inc = chip->mode_test_21[1];
@@ -1334,7 +1379,7 @@ Bit32u OPN2_ReadIRQPin(ym3438_t *chip)
 
 Bit8u OPN2_Read(ym3438_t *chip, Bit32u port)
 {
-    if ((port & 3) == 0)
+    if ((port & 3) == 0 || chip_type == ym3438_type_asic)
     {
         if (chip->mode_test_21[6])
         {

@@ -29,6 +29,10 @@
 #ifndef YM3438_H
 #define YM3438_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum {
     ym3438_type_discrete = 0,   /* Discrete YM3438 (Teradrive)          */
     ym3438_type_asic = 1,       /* ASIC YM3438 (MD1 VA7, MD2, MD3, etc) */
@@ -51,7 +55,7 @@ typedef int8_t          Bit8s;
 typedef struct
 {
     Bit32u cycles;
-    Bit32u slot;
+    Bit32u dslot;
     Bit32u channel;
     Bit16s mol, mor;
     /* IO */
@@ -199,4 +203,9 @@ void OPN2_SetTestPin(ym3438_t *chip, Bit32u value);
 Bit32u OPN2_ReadTestPin(ym3438_t *chip);
 Bit32u OPN2_ReadIRQPin(ym3438_t *chip);
 Bit8u OPN2_Read(ym3438_t *chip, Bit32u port);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

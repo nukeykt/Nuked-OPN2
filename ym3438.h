@@ -51,7 +51,6 @@ typedef int8_t          Bit8s;
 typedef struct
 {
     Bit32u cycles;
-    Bit32u slot;
     Bit32u channel;
     Bit16s mol, mor;
     /* IO */

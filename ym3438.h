@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2017 Alexey Khokholov (Nuke.YKT)
+// Copyright (C) 2017-2018 Alexey Khokholov (Nuke.YKT)
 // 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,16 +23,15 @@
 //      OPLx decapsulated(Matthew Gambrell, Olli Niemitalo):
 //          OPL2 ROMs.
 //
-// version: 1.0.7
+// version: 1.0.9
 //
 
 #ifndef YM3438_H
 #define YM3438_H
 
 enum {
-    ym3438_type_discrete = 0,   /* Discrete YM3438 (Teradrive)          */
-    ym3438_type_asic = 1,       /* ASIC YM3438 (MD1 VA7, MD2, MD3, etc) */
-    ym3438_type_ym2612 = 2      /* YM2612 (MD1, MD2 VA2)                */
+    ym3438_mode_ym2612 = 0x01,      /* Enables YM2612 emulation (MD1, MD2 VA2) */
+    ym3438_mode_readmode = 0x02,    /* Enables status read on any port (TeraDrive, MD1 VA7, MD2, etc) */
 };
 
 #include <stdint.h>
@@ -188,11 +187,13 @@ typedef struct
     Bit8u pan_l[6], pan_r[6];
     Bit8u ams[6];
     Bit8u pms[6];
+    Bit8u status;
+    Bit32u status_time;
 } ym3438_t;
 
 void OPN2_Reset(ym3438_t *chip);
 void OPN2_SetChipType(Bit32u type);
-void OPN2_Clock(ym3438_t *chip, Bit32u *buffer);
+void OPN2_Clock(ym3438_t *chip, Bit16s *buffer);
 void OPN2_Write(ym3438_t *chip, Bit32u port, Bit8u data);
 void OPN2_SetTestPin(ym3438_t *chip, Bit32u value);
 Bit32u OPN2_ReadTestPin(ym3438_t *chip);

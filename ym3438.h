@@ -66,7 +66,7 @@ typedef struct
     Bit8u write_busy_cnt;
     Bit8u write_fm_address;
     Bit8u write_fm_data;
-    Bit8u write_fm_mode_a;
+    Bit16u write_fm_mode_a;
     Bit16u address;
     Bit8u data;
     Bit8u pin_test_in;

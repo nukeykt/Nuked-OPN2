@@ -23,7 +23,7 @@
  *      OPLx decapsulated(Matthew Gambrell, Olli Niemitalo):
  *          OPL2 ROMs.
  *
- * version: 1.0.9
+ * version: 1.0.10
  */
 
 #include <string.h>
@@ -531,12 +531,12 @@ void OPN2_PhaseGenerate(ym3438_t *chip)
     }
     /* Phase step */
     slot = (chip->cycles + 19) % 24;
-    chip->pg_phase[slot] += chip->pg_inc[slot];
-    chip->pg_phase[slot] &= 0xfffff;
     if (chip->pg_reset[slot] || chip->mode_test_21[3])
     {
         chip->pg_phase[slot] = 0;
     }
+    chip->pg_phase[slot] += chip->pg_inc[slot];
+    chip->pg_phase[slot] &= 0xfffff;
 }
 
 void OPN2_EnvelopeSSGEG(ym3438_t *chip)

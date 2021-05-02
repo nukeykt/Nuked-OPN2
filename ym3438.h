@@ -193,10 +193,12 @@ typedef struct
     Bit8u pms[6];
     Bit8u status;
     Bit32u status_time;
+
+    Bit32u chip_type;
 } ym3438_t;
 
 void OPN2_Reset(ym3438_t *chip);
-void OPN2_SetChipType(Bit32u type);
+void OPN2_SetChipType(ym3438_t *chip, Bit32u type);
 void OPN2_Clock(ym3438_t *chip, Bit16s *buffer);
 void OPN2_Write(ym3438_t *chip, Bit32u port, Bit8u data);
 void OPN2_SetTestPin(ym3438_t *chip, Bit32u value);

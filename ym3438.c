@@ -216,8 +216,6 @@ static const Bit32u fm_algorithm[4][6][8] = {
     }
 };
 
-static Bit32u chip_type = ym3438_mode_readmode;
-
 static void OPN2_DoIO(ym3438_t *chip)
 {
     /* Write signal check */
@@ -981,7 +979,7 @@ static void OPN2_ChOutput(ym3438_t *chip)
     chip->mol = 0;
     chip->mor = 0;
 
-    if (chip_type & ym3438_mode_ym2612)
+    if (chip->chip_type & ym3438_mode_ym2612)
     {
         out_en = ((cycles & 3) == 3) || test_dac;
         /* YM2612 DAC emulation(not verified) */
@@ -1201,9 +1199,9 @@ void OPN2_Reset(ym3438_t *chip)
     }
 }
 
-void OPN2_SetChipType(Bit32u type)
+void OPN2_SetChipType(ym3438_t *chip, Bit32u type)
 {
-    chip_type = type;
+    chip->chip_type = type;
 }
 
 void OPN2_Clock(ym3438_t *chip, Bit16s *buffer)
@@ -1380,7 +1378,7 @@ Bit32u OPN2_ReadIRQPin(ym3438_t *chip)
 
 Bit8u OPN2_Read(ym3438_t *chip, Bit32u port)
 {
-    if ((port & 3) == 0 || (chip_type & ym3438_mode_readmode))
+    if ((port & 3) == 0 || (chip->chip_type & ym3438_mode_readmode))
     {
         if (chip->mode_test_21[6])
         {
@@ -1410,7 +1408,7 @@ Bit8u OPN2_Read(ym3438_t *chip, Bit32u port)
             chip->status = (chip->busy << 7) | (chip->timer_b_overflow_flag << 1)
                  | chip->timer_a_overflow_flag;
         }
-        if (chip_type & ym3438_mode_ym2612)
+        if (chip->chip_type & ym3438_mode_ym2612)
         {
             chip->status_time = 300000;
         }

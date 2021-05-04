@@ -228,8 +228,8 @@ Bit32u OPN2_ReadIRQPin(ym3438_t *chip);
 Bit8u OPN2_Read(ym3438_t *chip, Bit32u port);
 
 void OPN2_SetClockRate(ym3438_t *chip, Bit32u clock, Bit32u rate);
-void OPN2_WriteBuffered(ym3438_t *chip, Bit8u port, Bit8u data)
-void OPN2_GenerateResampled(ym3438_t *chip, Bit32s *buf)
+void OPN2_WriteBuffered(ym3438_t *chip, Bit8u port, Bit8u data);
+void OPN2_GenerateResampled(ym3438_t *chip, Bit32s *buf);
 
 #ifdef __cplusplus
 }

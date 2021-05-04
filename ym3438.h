@@ -63,6 +63,9 @@ typedef struct _opn2_writebuf {
 
 typedef struct
 {
+    Bit32u clock;
+    Bit32u smplRate;
+
     Bit32u cycles;
     Bit32u channel;
     Bit16s mol, mor;
@@ -205,6 +208,7 @@ typedef struct
     Bit32u status_time;
 
     Bit32u chip_type;
+    Bit32u use_filter;
     Bit32u mute[7];
     Bit32s rateratio;
     Bit32s samplecnt;
@@ -220,7 +224,7 @@ typedef struct
 
 void OPN2_Reset(ym3438_t *chip);
 void OPN2_SetChipType(ym3438_t *chip, Bit32u type);
-void OPN2_Clock(ym3438_t *chip, Bit16s *buffer);
+void OPN2_Clock(ym3438_t *chip, Bit32s *buffer);
 void OPN2_Write(ym3438_t *chip, Bit32u port, Bit8u data);
 void OPN2_SetTestPin(ym3438_t *chip, Bit32u value);
 Bit32u OPN2_ReadTestPin(ym3438_t *chip);

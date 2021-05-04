@@ -27,6 +27,7 @@
  */
 
 #include <string.h>
+#include <stdlib.h>
 #include "ym3438.h"
 
 // superctr's MegaDrive model 1 filter
@@ -1204,6 +1205,9 @@ void OPN2_Reset(ym3438_t *chip)
 }
 
 void OPN2_SetClockRate(ym3438_t *chip, Bit32u clock, Bit32u rate) {
+    chip->clock = clock;
+    chip->smplRate = rate;
+
     chip->rateratio = (Bit32s)((((Bit64u)144 * chip->smplRate) << RSM_FRAC) / chip->clock);
     if (abs(chip->rateratio - (1 << RSM_FRAC)) <= 1)
         chip->rateratio = (1 << RSM_FRAC);
@@ -1214,7 +1218,7 @@ void OPN2_SetChipType(ym3438_t *chip, Bit32u type)
     chip->chip_type = type;
 }
 
-void OPN2_Clock(ym3438_t *chip, Bit16s *buffer)
+void OPN2_Clock(ym3438_t *chip, Bit32s *buffer)
 {
     Bit32u slot = chip->cycles;
     chip->lfo_inc = chip->mode_test_21[1];

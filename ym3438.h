@@ -33,6 +33,10 @@
 extern "C" {
 #endif
 
+#define RSM_FRAC 10
+#define OPN_WRITEBUF_SIZE 2048
+#define OPN_WRITEBUF_DELAY 15
+
 enum {
     ym3438_mode_ym2612 = 0x01,      /* Enables YM2612 emulation (MD1, MD2 VA2) */
     ym3438_mode_readmode = 0x02     /* Enables status read on any port (TeraDrive, MD1 VA7, MD2, etc) */
@@ -50,6 +54,12 @@ typedef uint16_t        Bit16u;
 typedef int16_t         Bit16s;
 typedef uint8_t         Bit8u;
 typedef int8_t          Bit8s;
+
+typedef struct _opn2_writebuf {
+    Bit64u time;
+    Bit8u port;
+    Bit8u data;
+} opn2_writebuf;
 
 typedef struct
 {
@@ -195,6 +205,17 @@ typedef struct
     Bit32u status_time;
 
     Bit32u chip_type;
+    Bit32u mute[7];
+    Bit32s rateratio;
+    Bit32s samplecnt;
+    Bit32s oldsamples[2];
+    Bit32s samples[2];
+    
+    Bit64u writebuf_samplecnt;
+    Bit32u writebuf_cur;
+    Bit32u writebuf_last;
+    Bit64u writebuf_lasttime;
+    opn2_writebuf writebuf[OPN_WRITEBUF_SIZE];
 } ym3438_t;
 
 void OPN2_Reset(ym3438_t *chip);
@@ -205,6 +226,10 @@ void OPN2_SetTestPin(ym3438_t *chip, Bit32u value);
 Bit32u OPN2_ReadTestPin(ym3438_t *chip);
 Bit32u OPN2_ReadIRQPin(ym3438_t *chip);
 Bit8u OPN2_Read(ym3438_t *chip, Bit32u port);
+
+void OPN2_SetClockRate(ym3438_t *chip, Bit32u clock, Bit32u rate);
+void OPN2_WriteBuffered(ym3438_t *chip, Bit8u port, Bit8u data)
+void OPN2_GenerateResampled(ym3438_t *chip, Bit32s *buf)
 
 #ifdef __cplusplus
 }

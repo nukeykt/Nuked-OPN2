@@ -1548,3 +1548,12 @@ void OPN2_GenerateResampled(ym3438_t *chip, Bit32s *buf)
                      + chip->samples[1] * chip->samplecnt) / chip->rateratio);
     chip->samplecnt += 1 << RSM_FRAC;
 }
+
+void OPN2_SetMutemask(ym3438_t *chip, Bit8u mute)
+{
+    Bit8u i;
+    for (i = 0; i < 7; i++)
+    {
+        chip->mute[i] = (mute >> i) & 0x01;
+    }
+}

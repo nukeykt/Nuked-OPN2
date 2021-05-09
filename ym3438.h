@@ -39,7 +39,9 @@ extern "C" {
 
 enum {
     ym3438_mode_ym2612 = 0x01,      /* Enables YM2612 emulation (MD1, MD2 VA2) */
-    ym3438_mode_readmode = 0x02     /* Enables status read on any port (TeraDrive, MD1 VA7, MD2, etc) */
+    ym3438_mode_readmode = 0x02,     /* Enables status read on any port (TeraDrive, MD1 VA7, MD2, etc) */
+
+    ym3438_mode_max = UINT32_MAX
 };
 
 #include <stdint.h>

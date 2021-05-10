@@ -37,14 +37,14 @@ extern "C" {
 #define OPN_WRITEBUF_SIZE 2048
 #define OPN_WRITEBUF_DELAY 15
 
+#include <stdint.h>
+
 enum {
     ym3438_mode_ym2612 = 0x01,      /* Enables YM2612 emulation (MD1, MD2 VA2) */
     ym3438_mode_readmode = 0x02,     /* Enables status read on any port (TeraDrive, MD1 VA7, MD2, etc) */
 
     ym3438_mode_max = UINT32_MAX
 };
-
-#include <stdint.h>
 
 typedef uintptr_t       Bitu;
 typedef intptr_t        Bits;

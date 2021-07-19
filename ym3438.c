@@ -28,7 +28,12 @@
  */
 
 #include <string.h>
+#include <stdlib.h>
 #include "ym3438.h"
+
+// superctr's MegaDrive model 1 filter
+#define FILTER_CUTOFF 0.512331301282628 // 5894Hz  single pole IIR low pass
+#define FILTER_CUTOFF_I (1-FILTER_CUTOFF)
 
 enum {
     eg_num_attack = 0,
@@ -216,8 +221,6 @@ static const Bit32u fm_algorithm[4][6][8] = {
         { 1, 1, 1, 1, 1, 1, 1, 1 }  /* Out           */
     }
 };
-
-static Bit32u chip_type = ym3438_mode_readmode;
 
 static void OPN2_DoIO(ym3438_t *chip)
 {
@@ -982,7 +985,7 @@ static void OPN2_ChOutput(ym3438_t *chip)
     chip->mol = 0;
     chip->mor = 0;
 
-    if (chip_type & ym3438_mode_ym2612)
+    if (chip->chip_type & ym3438_mode_ym2612)
     {
         out_en = ((cycles & 3) == 3) || test_dac;
         /* YM2612 DAC emulation(not verified) */
@@ -1202,12 +1205,21 @@ void OPN2_Reset(ym3438_t *chip)
     }
 }
 
-void OPN2_SetChipType(Bit32u type)
-{
-    chip_type = type;
+void OPN2_SetClockRate(ym3438_t *chip, Bit32u clock, Bit32u rate) {
+    chip->clock = clock;
+    chip->smplRate = rate;
+
+    chip->rateratio = (Bit32s)((((Bit64u)144 * chip->smplRate) << RSM_FRAC) / chip->clock);
+    if (abs(chip->rateratio - (1 << RSM_FRAC)) <= 1)
+        chip->rateratio = (1 << RSM_FRAC);
 }
 
-void OPN2_Clock(ym3438_t *chip, Bit16s *buffer)
+void OPN2_SetChipType(ym3438_t *chip, Bit32u type)
+{
+    chip->chip_type = type;
+}
+
+void OPN2_Clock(ym3438_t *chip, Bit32s *buffer)
 {
     Bit32u slot = chip->cycles;
     chip->lfo_inc = chip->mode_test_21[1];
@@ -1381,7 +1393,7 @@ Bit32u OPN2_ReadIRQPin(ym3438_t *chip)
 
 Bit8u OPN2_Read(ym3438_t *chip, Bit32u port)
 {
-    if ((port & 3) == 0 || (chip_type & ym3438_mode_readmode))
+    if ((port & 3) == 0 || (chip->chip_type & ym3438_mode_readmode))
     {
         if (chip->mode_test_21[6])
         {
@@ -1411,7 +1423,7 @@ Bit8u OPN2_Read(ym3438_t *chip, Bit32u port)
             chip->status = (chip->busy << 7) | (chip->timer_b_overflow_flag << 1)
                  | chip->timer_a_overflow_flag;
         }
-        if (chip_type & ym3438_mode_ym2612)
+        if (chip->chip_type & ym3438_mode_ym2612)
         {
             chip->status_time = 300000;
         }
@@ -1425,4 +1437,124 @@ Bit8u OPN2_Read(ym3438_t *chip, Bit32u port)
         return chip->status;
     }
     return 0;
+}
+
+void OPN2_WriteBuffered(ym3438_t *chip, Bit8u port, Bit8u data)
+{
+    Bit64u time1, time2;
+    Bit32s buffer[2];
+    Bit64u skip;
+
+    if (chip->writebuf[chip->writebuf_last].port & 0x04)
+    {
+        OPN2_Write(chip, chip->writebuf[chip->writebuf_last].port & 0X03,
+                   chip->writebuf[chip->writebuf_last].data);
+
+        chip->writebuf_cur = (chip->writebuf_last + 1) % OPN_WRITEBUF_SIZE;
+        skip = chip->writebuf[chip->writebuf_last].time - chip->writebuf_samplecnt;
+        chip->writebuf_samplecnt = chip->writebuf[chip->writebuf_last].time;
+        while (skip--)
+        {
+            OPN2_Clock(chip, buffer);
+        }
+    }
+
+    chip->writebuf[chip->writebuf_last].port = (port & 0x03) | 0x04;
+    chip->writebuf[chip->writebuf_last].data = data;
+    time1 = chip->writebuf_lasttime + OPN_WRITEBUF_DELAY;
+    time2 = chip->writebuf_samplecnt;
+
+    if (time1 < time2)
+    {
+        time1 = time2;
+    }
+
+    chip->writebuf[chip->writebuf_last].time = time1;
+    chip->writebuf_lasttime = time1;
+    chip->writebuf_last = (chip->writebuf_last + 1) % OPN_WRITEBUF_SIZE;
+}
+
+void OPN2_GenerateResampled(ym3438_t *chip, Bit32s *buf)
+{
+    Bit32u i;
+    Bit32s buffer[2];
+    Bit32u mute;
+    
+    while (chip->samplecnt >= chip->rateratio)
+    {
+        chip->oldsamples[0] = chip->samples[0];
+        chip->oldsamples[1] = chip->samples[1];
+        chip->samples[0] = chip->samples[1] = 0;
+        for (i = 0; i < 24; i++)
+        {
+            switch (chip->cycles >> 2)
+            {
+            case 0: // Ch 2
+                mute = chip->mute[1];
+                break;
+            case 1: // Ch 6, DAC
+                mute = chip->mute[5 + chip->dacen];
+                break;
+            case 2: // Ch 4
+                mute = chip->mute[3];
+                break;
+            case 3: // Ch 1
+                mute = chip->mute[0];
+                break;
+            case 4: // Ch 5
+                mute = chip->mute[4];
+                break;
+            case 5: // Ch 3
+                mute = chip->mute[2];
+                break;
+            default:
+                mute = 0;
+                break;
+            }
+            OPN2_Clock(chip, buffer);
+            if (!mute)
+            {
+                chip->samples[0] += buffer[0];
+                chip->samples[1] += buffer[1];
+            }
+
+            while (chip->writebuf[chip->writebuf_cur].time <= chip->writebuf_samplecnt)
+            {
+                if (!(chip->writebuf[chip->writebuf_cur].port & 0x04))
+                {
+                    break;
+                }
+                chip->writebuf[chip->writebuf_cur].port &= 0x03;
+                OPN2_Write(chip, chip->writebuf[chip->writebuf_cur].port,
+                              chip->writebuf[chip->writebuf_cur].data);
+                chip->writebuf_cur = (chip->writebuf_cur + 1) % OPN_WRITEBUF_SIZE;
+            }
+            chip->writebuf_samplecnt++;
+        }
+        if(!chip->use_filter)
+        {
+            chip->samples[0] *= 11;
+            chip->samples[1] *= 11;
+        }
+        else
+        {
+            chip->samples[0] = chip->oldsamples[0] + FILTER_CUTOFF_I * (chip->samples[0]*(11+1) - chip->oldsamples[0]);
+            chip->samples[1] = chip->oldsamples[1] + FILTER_CUTOFF_I * (chip->samples[1]*(11+1) - chip->oldsamples[1]);
+        }
+        chip->samplecnt -= chip->rateratio;
+    }
+    buf[0] = (Bit32s)((chip->oldsamples[0] * (chip->rateratio - chip->samplecnt)
+                     + chip->samples[0] * chip->samplecnt) / chip->rateratio);
+    buf[1] = (Bit32s)((chip->oldsamples[1] * (chip->rateratio - chip->samplecnt)
+                     + chip->samples[1] * chip->samplecnt) / chip->rateratio);
+    chip->samplecnt += 1 << RSM_FRAC;
+}
+
+void OPN2_SetMutemask(ym3438_t *chip, Bit8u mute)
+{
+    Bit8u i;
+    for (i = 0; i < 7; i++)
+    {
+        chip->mute[i] = (mute >> i) & 0x01;
+    }
 }

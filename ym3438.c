@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2017-2021 Alexey Khokholov (Nuke.YKT)
  *
+ * This file is part of Nuked OPN2.
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either

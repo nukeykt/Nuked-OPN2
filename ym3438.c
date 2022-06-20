@@ -30,6 +30,8 @@
 #include <string.h>
 #include "ym3438.h"
 
+#define SIGN_EXTEND(bit_index, value) (((value) & ((1u << (bit_index)) - 1u)) - ((value) & (1u << (bit_index))))
+
 enum {
     eg_num_attack = 0,
     eg_num_decay = 1,
@@ -972,8 +974,7 @@ static void OPN2_ChOutput(ym3438_t *chip)
     if (((cycles >> 2) == 1 && chip->dacen) || test_dac)
     {
         out = (Bit16s)chip->dacdata;
-        out <<= 7;
-        out >>= 7;
+        out = SIGN_EXTEND(8, out);
     }
     else
     {
@@ -1059,8 +1060,7 @@ static void OPN2_FMGenerate(ym3438_t *chip)
     {
         output = output ^ (chip->mode_test_21[4] << 13);
     }
-    output <<= 2;
-    output >>= 2;
+    output = SIGN_EXTEND(13, output);
     chip->fm_out[slot] = output;
 }
 

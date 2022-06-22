@@ -884,7 +884,7 @@ static void OPN2_FMPrepare(ym3438_t *chip)
     if (op == 0)
     {
         /* Feedback */
-        mod = mod >> (10 - chip->fb[channel]);
+        mod = mod / (1 << (10 - chip->fb[channel]));
         if (!chip->fb[channel])
         {
             mod = 0;
@@ -892,7 +892,7 @@ static void OPN2_FMPrepare(ym3438_t *chip)
     }
     else
     {
-        mod >>= 1;
+        mod /= 2;
     }
     chip->fm_mod[slot] = mod;
 

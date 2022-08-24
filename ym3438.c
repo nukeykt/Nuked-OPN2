@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Alexey Khokholov (Nuke.YKT)
+ * Copyright (C) 2017-2022 Alexey Khokholov (Nuke.YKT)
  *
  * This file is part of Nuked OPN2.
  *
@@ -24,7 +24,7 @@
  *      OPLx decapsulated(Matthew Gambrell, Olli Niemitalo):
  *          OPL2 ROMs.
  *
- * version: 1.0.10
+ * version: 1.0.11
  */
 
 #include <string.h>
@@ -662,7 +662,7 @@ static void OPN2_EnvelopeADSR(ym3438_t *chip)
             }
             break;
         case eg_num_decay:
-            if ((level >> 5) == chip->eg_sl[1])
+            if ((level >> 4) == (chip->eg_sl[1] << 1))
             {
                 nextstate = eg_num_sustain;
             }

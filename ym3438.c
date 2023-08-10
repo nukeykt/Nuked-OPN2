@@ -584,7 +584,7 @@ static void OPN2_EnvelopeSSGEG(ym3438_t *chip)
     }
     chip->eg_ssg_dir[slot] = direction;
     chip->eg_ssg_enable[slot] = (chip->ssg_eg[slot] >> 3) & 0x01;
-    chip->eg_ssg_inv[slot] = (chip->eg_ssg_dir[slot] ^ ((chip->ssg_eg[slot] >> 2) & 0x01))
+    chip->eg_ssg_inv[slot] = (chip->eg_ssg_dir[slot] ^ (((chip->ssg_eg[slot] >> 2) & 0x01) & ((chip->ssg_eg[slot] >> 3) & 0x01)))
                            & chip->eg_kon[slot];
 }
 
